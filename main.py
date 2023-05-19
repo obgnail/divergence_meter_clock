@@ -48,20 +48,29 @@ class DivergenceMeter:
                 yield 60
                 i += random.choice([0, 0, 0, 1, 1, 2])  # weight choice makes it more random
 
-    @staticmethod
-    def show_image(window_name: str, wait_time: [int, Iterable[int]], image_generator: Callable) -> None:
+    def show(
+            self,
+            window_name: str,
+            img_generator: Iterable[str],
+            wait_time: [int, Iterable[int]] = 0,
+    ) -> None:
         cv2.namedWindow(window_name, cv2.WINDOW_AUTOSIZE)
 
         while True:
             if cv2.getWindowProperty(window_name, 0) == -1:
                 break
 
-            img = image_generator()
+            img_str = next(img_generator, None)
+            if img_str is None:
+                break
+
+            wait = next(wait_time, None) if isinstance(wait_time, Iterable) else wait_time
+            if wait is None:
+                break
+
+            img = self.generate_image(img_str)
             cv2.imshow(window_name, img)
-
-            wait = wait_time if isinstance(wait_time, int) else next(wait_time)
             key = cv2.waitKey(wait)
-
             if key == 27:  # esc 退出
                 cv2.destroyAllWindows()
                 break
@@ -76,31 +85,34 @@ class DivergenceMeter:
         return img
 
     def generate_time_image(self):
-        t = time.localtime()
-        time_str = '{:02d}.{:02d}.{:02d}'.format(t.tm_hour, t.tm_min, t.tm_sec)
-        return self.generate_image(time_str)
+        while True:
+            t = time.localtime()
+            time_str = '{:02d}.{:02d}.{:02d}'.format(t.tm_hour, t.tm_min, t.tm_sec)
+            yield time_str
 
     def generate_divergence_image(self):
-        if random.randint(0, self.possibility) == self.possibility:
-            num_str = self.lucky_number
-        else:
-            num_list = [str(random.randint(0, 9)) for _ in range(7)]
-            num_str = ''.join(num_list)
-            num_str = num_str[0] + '.' + num_str[1:]
-        return self.generate_image(num_str)
+        while True:
+            if random.randint(0, self.possibility) == self.possibility:
+                num_str = self.lucky_number
+            else:
+                num_list = [str(random.randint(0, 9)) for _ in range(7)]
+                num_str = ''.join(num_list)
+                num_str = num_str[0] + '.' + num_str[1:]
+            yield num_str
 
     def meter(self) -> None:
-        wait_time = self._random_wait_time()
-        image_generator = self.generate_divergence_image
-        self.show_image(self.meter_window_name, wait_time, image_generator)
+        wait_time_generator = self._random_wait_time()
+        image_generator = self.generate_divergence_image()
+        self.show(self.meter_window_name, image_generator, wait_time=wait_time_generator)
 
     def clock(self) -> None:
         wait_time = 1000
-        image_generator = self.generate_time_image
-        self.show_image(self.clock_window_name, wait_time, image_generator)
+        image_generator = self.generate_time_image()
+        self.show(self.clock_window_name, image_generator, wait_time=wait_time)
 
 
 if __name__ == '__main__':
     d = DivergenceMeter()
     # d.clock()
-    d.meter()
+    # d.meter()
+    d.show("test", iter(["3.1415926", '123', '....']))
