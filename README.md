@@ -6,6 +6,10 @@
 
 
 
+**inspired by [Nixie](https://github.com/Asterecho/Nixie)**
+
+
+
 ## usage
 
 ```python
