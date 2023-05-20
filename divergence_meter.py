@@ -12,7 +12,8 @@ class DivergenceMeter:
 
     @staticmethod
     def _get_img_map() -> dict:
-        return {i: cv2.imread(os.path.join('.', 'img', f'{i}.png'))
+        dir_path = os.path.abspath(os.path.dirname(__file__))
+        return {i: cv2.imread(os.path.join(dir_path, 'img', f'{i}.png'))
                 for i in ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.')}
 
     @staticmethod
