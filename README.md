@@ -1,6 +1,6 @@
 # Divergence Meter
 
-![divergence meter](assets/divergence meter.png)
+![divergence](assets/divergence.png)
 
 > El Psy Kongroo.  —— Steins;Gate
 
