@@ -41,14 +41,14 @@ class DivergenceMeter:
                 i += random.choice([0, 0, 0, 1, 1, 2])  # weight choice makes it more random
 
     @staticmethod
-    def generate_clock() -> Iterable[str]:
+    def _generate_clock() -> Iterable[str]:
         while True:
             t = time.localtime()
             time_str = '{:02d}.{:02d}.{:02d}'.format(t.tm_hour, t.tm_min, t.tm_sec)
             yield time_str
 
     @staticmethod
-    def generate_meter() -> Iterable[str]:
+    def _generate_meter() -> Iterable[str]:
         while True:
             num_list = [str(random.randint(0, 9)) for _ in range(7)]
             num_str = ''.join(num_list)
@@ -93,14 +93,14 @@ class DivergenceMeter:
                 cv2.imwrite(f'{window_name}.png', img)
 
     def meter(self) -> None:
-        self.show(self.generate_meter(), self._random_wait_time(), 'divergence meter')
+        self.show(self._generate_meter(), self._random_wait_time(), 'divergence meter')
 
     def clock(self) -> None:
-        self.show(self.generate_clock(), 1000, 'divergence clock')
+        self.show(self._generate_clock(), 1000, 'divergence clock')
 
 
 if __name__ == '__main__':
     d = DivergenceMeter()
     d.clock()
     d.meter()
-    d.show(['1.048596', '3.1415926', '10086'])
+    d.show(['1.048596', '3.1415926', '10086'], wait_time=[1000, 2000, 3000])
