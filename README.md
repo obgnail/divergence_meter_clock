@@ -1,12 +1,10 @@
 # Divergence Meter
 
+**This project was inspired by [Nixie](https://github.com/Asterecho/Nixie)**.
+
 ![divergence](assets/divergence.png)
 
-> El Psy Kongroo.  —— Steins;Gate
-
-
-
-**inspired by [Nixie](https://github.com/Asterecho/Nixie)**
+> El Psy Kongroo.    —— Steins;Gate
 
 
 
