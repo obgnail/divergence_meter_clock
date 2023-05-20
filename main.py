@@ -9,8 +9,6 @@ from typing import Iterable, Sequence
 class DivergenceMeter:
     def __init__(self):
         self._img_map = self._get_img_map()
-        self.borderV = 307 // 4
-        self.borderH = 104
 
     @staticmethod
     def _get_img_map() -> dict:
@@ -55,10 +53,10 @@ class DivergenceMeter:
             num_str = num_str[0] + '.' + num_str[1:]
             yield num_str
 
-    def generate_image(self, num_str: str):
+    def generate_image(self, num_str: str, border_v: int, border_h: int):
         img_list = [self._img_map[i] for i in num_str]
         img = cv2.hconcat(img_list)
-        img = cv2.copyMakeBorder(img, self.borderV, self.borderV, self.borderH, self.borderH, cv2.BORDER_CONSTANT)
+        img = cv2.copyMakeBorder(img, border_v, border_v, border_h, border_h, cv2.BORDER_CONSTANT)
         return img
 
     def show(
@@ -66,6 +64,8 @@ class DivergenceMeter:
             images: [Iterable[str], Sequence[str]],
             wait_time: [Iterable[int], Sequence[int], int] = 0,
             window_name: str = 'imshow',
+            border_v: int = 307 // 4,
+            border_h: int = 104,
     ) -> None:
         images = iter(images) if isinstance(images, Sequence) else images
         wait_time = iter(wait_time) if isinstance(wait_time, Sequence) else wait_time
@@ -81,7 +81,7 @@ class DivergenceMeter:
             if img_str is None or wait is None:
                 break
 
-            img = self.generate_image(img_str)
+            img = self.generate_image(img_str, border_v, border_h)
             cv2.imshow(window_name, img)
             key = cv2.waitKey(wait)
             if key == 27 or key == ord('q'):  # esc/q -> exit
