@@ -4,10 +4,9 @@ import time
 import sys
 from typing import Iterable, Callable
 from PIL import Image, ImageOps, ImageQt
-from PyQt5 import QtWidgets
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QPixmap, QCursor
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel
 
 TYPE_CLOCK = 'clock'
 TYPE_METER = 'meter'
@@ -113,16 +112,28 @@ class ImageThread(QThread):
         super().__init__()
         self.type_ = type_
 
+    def set_type(self, type_):
+        self.type_ = type_
+
     def run(self):
-        d = ImageGenerator()
-        generator = d.clock if self.type_ == TYPE_CLOCK else d.meter
-        for pic in generator():
-            self.change_pic.emit(pic)
+        gen = ImageGenerator()
+        last = self.type_
+
+        while True:
+            generator = gen.clock if self.type_ == TYPE_CLOCK else gen.meter
+
+            for pic in generator():
+                if last != self.type_:
+                    last = self.type_
+                    break
+
+                self.change_pic.emit(pic)
 
 
 class Divergence(QWidget):
     def __init__(self, type_=TYPE_CLOCK):
         super(QWidget, self).__init__()
+        self.type_ = type_
         self.initUI(type_)
 
         self.origin_pic_size = None
@@ -182,7 +193,8 @@ class Divergence(QWidget):
             self.setCursor(QCursor(Qt.OpenHandCursor))
 
         if event.button() == Qt.RightButton:
-            self.close()
+            self.type_ = TYPE_METER if self.type_ == TYPE_CLOCK else TYPE_CLOCK
+            self.worker.set_type(self.type_)
 
     def mouseMoveEvent(self, QMouseEvent):
         if Qt.LeftButton and self.is_dragging:
@@ -192,6 +204,12 @@ class Divergence(QWidget):
     def mouseReleaseEvent(self, QMouseEvent):
         self.is_dragging = False
         self.setCursor(QCursor(Qt.ArrowCursor))
+
+    def mouseDoubleClickEvent(self, QMouseEvent):
+        if self.isMaximized():
+            self.showNormal()
+        else:
+            self.showMaximized()
 
 
 def test_image_generator():
@@ -205,7 +223,7 @@ def test_image_generator():
 
 def test_qt():
     app = QApplication(sys.argv)
-    main = Divergence(type_=TYPE_CLOCK)
+    main = Divergence(type_=TYPE_METER)
     main.show()
     sys.exit(app.exec_())
 
