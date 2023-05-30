@@ -188,15 +188,21 @@ class Divergence(QWidget):
         self.setCursor(QCursor(Qt.ArrowCursor))
 
 
-if __name__ == '__main__':
+def test_image_generator():
+    d = ImageGenerator()
+    for p in d.meter():
+        t = time.localtime()
+        time_str = '{:02d}.{:02d}.{:02d}.jpg'.format(t.tm_hour, t.tm_min, t.tm_sec)
+        p.save(time_str, "JPEG")
+        print(time_str)
+
+
+def test_qt():
     app = QApplication(sys.argv)
     main = Divergence(type_='clock')
     main.show()
     sys.exit(app.exec_())
 
-    # d = DivergenceImage()
-    # for p in d.meter():
-    #     t = time.localtime()
-    #     time_str = '{:02d}.{:02d}.{:02d}.jpg'.format(t.tm_hour, t.tm_min, t.tm_sec)
-    #     p.save(time_str, "JPEG")
-    #     print(time_str)
+
+if __name__ == '__main__':
+    test_qt()
