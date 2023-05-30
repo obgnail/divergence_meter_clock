@@ -4,9 +4,10 @@ import time
 import sys
 from typing import Iterable, Callable
 from PIL import Image, ImageOps, ImageQt
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QPixmap, QCursor
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QDesktopWidget
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout
 
 TYPE_CLOCK = 'clock'
 TYPE_METER = 'meter'
@@ -158,8 +159,13 @@ class Divergence(QWidget):
             new_w = int(origin_w * scale)
             new_h = int(origin_h * scale)
 
+            frame = self.frameGeometry()
+            pos_x = (frame.width() - new_w) // 2
+            pos_y = (frame.height() - new_h) // 2
+
             self.pixmap = self.pixmap.scaled(new_w, new_h, Qt.IgnoreAspectRatio)
             self.label.resize(new_w, new_h)
+            self.label.move(pos_x, pos_y)
             self.label.setPixmap(self.pixmap)
 
         QWidget.paintEvent(self, event)
