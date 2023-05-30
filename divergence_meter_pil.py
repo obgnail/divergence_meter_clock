@@ -8,6 +8,9 @@ from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QPixmap, QCursor
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel
 
+TYPE_CLOCK = 'clock'
+TYPE_METER = 'meter'
+
 
 class ImageOptionMixin:
     @staticmethod
@@ -112,14 +115,14 @@ class ImageThread(QThread):
 
     def run(self):
         d = ImageGenerator()
-        generator = d.clock if self.type_ == 'clock' else d.meter
+        generator = d.clock if self.type_ == TYPE_CLOCK else d.meter
         for _pic in generator():
             self.pic = _pic
             self.change_pic.emit()
 
 
 class Divergence(QWidget):
-    def __init__(self, type_='clock'):
+    def __init__(self, type_=TYPE_CLOCK):
         super(QWidget, self).__init__()
         self.initUI(type_)
 
@@ -136,18 +139,11 @@ class Divergence(QWidget):
         self.worker.start()
 
     def show_image(self):
-        if not self.worker.pic:
-            raise "pic is None"
-
         qim = ImageQt.ImageQt(self.worker.pic)
         img = qim.copy()
         self.origin_pic_size = img.size()
         self.pixmap = QPixmap.fromImage(img)
         self.label.setPixmap(self.pixmap)
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
-            self.close()
 
     def paintEvent(self, event):
         if (self.origin_pic_size is not None) and (self.pixmap is not None):
@@ -167,6 +163,10 @@ class Divergence(QWidget):
             self.label.setPixmap(self.pixmap)
 
         QWidget.paintEvent(self, event)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.close()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -199,7 +199,7 @@ def test_image_generator():
 
 def test_qt():
     app = QApplication(sys.argv)
-    main = Divergence(type_='clock')
+    main = Divergence(type_=TYPE_CLOCK)
     main.show()
     sys.exit(app.exec_())
 
