@@ -6,7 +6,7 @@ from typing import Iterable, Callable
 from PIL import Image, ImageOps, ImageQt
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QPixmap, QCursor
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QDesktopWidget
 
 TYPE_CLOCK = 'clock'
 TYPE_METER = 'meter'
@@ -129,6 +129,8 @@ class Divergence(QWidget):
 
     def initUI(self, type_):
         self.setWindowFlags(Qt.CustomizeWindowHint)
+        self.setStyleSheet('background-color:black')
+
         self.label = QLabel(self)
         self.label.resize(984, 515)
 
@@ -197,7 +199,7 @@ def test_image_generator():
 
 def test_qt():
     app = QApplication(sys.argv)
-    main = Divergence(type_=TYPE_METER)
+    main = Divergence(type_=TYPE_CLOCK)
     main.show()
     sys.exit(app.exec_())
 
