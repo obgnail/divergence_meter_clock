@@ -106,19 +106,17 @@ class ImageGenerator(ImageOptionMixin):
 
 
 class ImageThread(QThread):
-    change_pic = pyqtSignal()
+    change_pic = pyqtSignal(Image.Image)
 
     def __init__(self, type_):
         super().__init__()
         self.type_ = type_
-        self.pic = None
 
     def run(self):
         d = ImageGenerator()
         generator = d.clock if self.type_ == TYPE_CLOCK else d.meter
-        for _pic in generator():
-            self.pic = _pic
-            self.change_pic.emit()
+        for pic in generator():
+            self.change_pic.emit(pic)
 
 
 class Divergence(QWidget):
@@ -138,8 +136,8 @@ class Divergence(QWidget):
         self.worker.change_pic.connect(self.show_image)
         self.worker.start()
 
-    def show_image(self):
-        qim = ImageQt.ImageQt(self.worker.pic)
+    def show_image(self, pic):
+        qim = ImageQt.ImageQt(pic)
         img = qim.copy()
         self.origin_pic_size = img.size()
         self.pixmap = QPixmap.fromImage(img)
@@ -199,7 +197,7 @@ def test_image_generator():
 
 def test_qt():
     app = QApplication(sys.argv)
-    main = Divergence(type_=TYPE_CLOCK)
+    main = Divergence(type_=TYPE_METER)
     main.show()
     sys.exit(app.exec_())
 
