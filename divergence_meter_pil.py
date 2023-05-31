@@ -2,9 +2,11 @@ import random
 import os
 import time
 import sys
+
 from typing import Iterable, Callable
+
 from PIL import Image, ImageOps, ImageQt
-from PyQt5.QtCore import QThread, pyqtSignal, Qt
+from PyQt5.QtCore import QThread, pyqtSignal, Qt, QPoint
 from PyQt5.QtGui import QPixmap, QCursor
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel
 
@@ -58,7 +60,7 @@ class ImageGenerator(ImageOptionMixin):
 
     @staticmethod
     def _generate_border():
-        return 307 // 4, 104
+        return 307 // 4, int(104 * 1.3)
 
     @staticmethod
     def _generate_clock() -> [str, None]:
@@ -105,34 +107,91 @@ class ImageGenerator(ImageOptionMixin):
         return self.generate(self._generate_clock, border, lambda: 1000)
 
 
+class FramelessWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setStyleSheet("background-color: black;")
+        self.setMouseTracking(True)  # 鼠标跟踪
+
+        # 初始化鼠标拖动相关的变量
+        self.drag = False  # 正在通过拖动移动窗口
+        self._padding = 10  # 边界宽度
+        self.drag_position = QPoint(0, 0)
+        self.resize_drag = False  # 正在通过拖动修改窗口大小
+        self.resize_position = QPoint(0, 0)
+        self.resize_width = 0
+        self.resize_height = 0
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.LeftButton:
+            # 如果在调整窗口大小，根据鼠标相对于按下时的偏移量，改变窗口宽度和高度，但不小于最小尺寸
+            if self.resize_drag:
+                dx = event.globalX() - self.resize_position.x()
+                dy = event.globalY() - self.resize_position.y()
+                width = max(self.resize_width + dx, self.minimumWidth())
+                height = max(self.resize_height + dy, self.minimumHeight())
+                self.resize(width, height)
+            # 如果在移动窗口位置，根据鼠标相对于按下时的偏移量，改变窗口位置
+            elif self.drag:
+                self.setCursor(QCursor(Qt.OpenHandCursor))
+                self.move(event.globalPos() - self.drag_position)
+
+        # 如果鼠标左键没有按下，根据鼠标位置改变光标形状
+        else:
+            # 如果在窗口右下角10x10的区域内，显示对角调整光标
+            if (self.width() - event.x()) <= self._padding and (self.height() - event.y()) <= self._padding:
+                self.setCursor(Qt.SizeFDiagCursor)
+            # 否则，显示普通光标
+            else:
+                self.setCursor(Qt.ArrowCursor)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            # 如果鼠标左键在窗口右下角10x10的区域内按下，开始调整窗口大小
+            if (self.width() - event.x()) <= self._padding and (self.height() - event.y()) <= self._padding:
+                self.resize_drag = True
+                self.resize_position = event.globalPos()
+                self.resize_width = self.width()
+                self.resize_height = self.height()
+            else:
+                # 否则，开始移动窗口位置
+                self.drag = True
+                self.drag_position = event.globalPos() - self.pos()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            # 如果鼠标左键释放，停止拖动和调整
+            self.drag = False
+            self.resize_drag = False
+            self.setCursor(QCursor(Qt.ArrowCursor))
+
+
 class ImageThread(QThread):
     change_pic = pyqtSignal(Image.Image)
 
     def __init__(self, type_):
         super().__init__()
         self.type_ = type_
+        self.last = type_
 
     def set_type(self, type_):
         self.type_ = type_
 
     def run(self):
         gen = ImageGenerator()
-        last = self.type_
-
         while True:
             generator = gen.clock if self.type_ == TYPE_CLOCK else gen.meter
-
             for pic in generator():
-                if last != self.type_:
-                    last = self.type_
+                if self.last != self.type_:
+                    self.last = self.type_
                     break
-
                 self.change_pic.emit(pic)
 
 
-class Divergence(QWidget):
+class Divergence(FramelessWindow):
     def __init__(self, type_=TYPE_CLOCK):
-        super(QWidget, self).__init__()
+        super().__init__()
         self.type_ = type_
         self.initUI(type_)
 
@@ -140,9 +199,6 @@ class Divergence(QWidget):
         self.pixmap = None
 
     def initUI(self, type_):
-        self.setWindowFlags(Qt.CustomizeWindowHint)
-        self.setStyleSheet('background-color:black')
-
         self.label = QLabel(self)
         self.label.resize(984, 515)
 
@@ -182,51 +238,28 @@ class Divergence(QWidget):
         QWidget.paintEvent(self, event)
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
-            self.close()
+        self.close()
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.is_dragging = True
-            self.drag_position = event.globalPos() - self.pos()
-            event.accept()
-            self.setCursor(QCursor(Qt.OpenHandCursor))
-
         if event.button() == Qt.RightButton:
             self.type_ = TYPE_METER if self.type_ == TYPE_CLOCK else TYPE_CLOCK
             self.worker.set_type(self.type_)
 
-    def mouseMoveEvent(self, QMouseEvent):
-        if Qt.LeftButton and self.is_dragging:
-            self.move(QMouseEvent.globalPos() - self.drag_position)
-            QMouseEvent.accept()
+        FramelessWindow.mousePressEvent(self, event)
 
-    def mouseReleaseEvent(self, QMouseEvent):
-        self.is_dragging = False
-        self.setCursor(QCursor(Qt.ArrowCursor))
-
-    def mouseDoubleClickEvent(self, QMouseEvent):
+    def mouseDoubleClickEvent(self, event):
         if self.isMaximized():
             self.showNormal()
         else:
             self.showMaximized()
 
 
-def test_image_generator():
-    d = ImageGenerator()
-    for p in d.meter():
-        t = time.localtime()
-        time_str = '{:02d}.{:02d}.{:02d}.jpg'.format(t.tm_hour, t.tm_min, t.tm_sec)
-        p.save(time_str, "JPEG")
-        print(time_str)
-
-
-def test_qt():
+def qt():
     app = QApplication(sys.argv)
-    main = Divergence(type_=TYPE_METER)
+    main = Divergence()
     main.show()
     sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
-    test_qt()
+    qt()
